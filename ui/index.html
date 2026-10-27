@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ws://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Nest</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="topbar">
+  <button id="home" class="brand" title="Nest home"><img src="icon.png" alt=""><b>nest</b><span class="version">PREVIEW 0.1</span></button>
+  <div class="session-status"><i id="status-dot"></i><span id="status">Your space is ready</span></div>
+  <div class="top-actions"><time id="clock"></time><button id="setup" class="subtle">Setup <span data-icon="settings"></span></button><button id="fullscreen" class="icon-button" title="Fullscreen (F11)" aria-label="Toggle fullscreen" data-icon="expand"></button></div>
+</header>
+<main>
+  <section id="welcome" class="welcome">
+    <div class="welcome-content">
+      <div class="eyebrow"><span class="tiny-line"></span> A DESKTOP WITHIN YOUR DESKTOP</div>
+      <h1>A little space.<br><em>All yours.</em></h1>
+      <p class="intro">Your apps. Your Linux. A fresh place to settle in.<br>Open a desktop without leaving the one you love.</p>
+      <div class="start-row"><button id="start" class="primary">Enter your desktop <span data-icon="arrow"></span></button><span class="start-note" id="readiness">Checking your system…</span></div>
+      <div class="features"><span><i></i> Real Linux apps</span><span><i></i> No virtual machine</span><span><i></i> One window</span></div>
+    </div>
+    <div class="welcome-bottom"><span>01 / YOUR PERSONAL WORKSPACE</span><span>Built to feel like home.</span></div>
+    <div class="orbit-label"><span>n</span><small>NEST / LINUX</small></div>
+  </section>
+  <section id="desktop" class="desktop" hidden aria-label="Nested Linux desktop"><div id="screen"></div><div id="connecting" class="connection-cover">Connecting to your desktop…</div></section>
+  <aside id="launcher" class="launcher panel" hidden>
+    <div class="panel-heading"><div><small>MAKE YOURSELF AT HOME</small><h2>Your applications</h2></div><button class="icon-button" id="close-launcher" aria-label="Close launcher" data-icon="close"></button></div>
+    <label class="search"><span data-icon="search"></span><input id="app-search" placeholder="Find an app…" autocomplete="off"></label>
+    <div id="app-grid" class="app-grid"></div><p class="launcher-note">Apps run on your Linux system, inside Nest.</p>
+  </aside>
+</main>
+<footer class="bottom-bar">
+  <button id="apps" class="apps-button"><span data-icon="grid"></span><span>Applications</span></button>
+  <div class="quick-apps"><button data-launch="firefox" title="Open Firefox" aria-label="Open Firefox" class="quick firefox" data-icon="globe"></button><button data-launch="terminal" title="Open Terminal" aria-label="Open Terminal" class="quick terminal" data-icon="terminal"></button><button data-launch="btop" title="Open btop" aria-label="Open btop" class="quick btop" data-icon="activity"></button><button data-launch="files" title="Open Files" aria-label="Open Files" class="quick files" data-icon="folder"></button></div>
+  <div id="windows" class="window-list"><span class="empty-windows">Room for your next idea.</span></div>
+  <div class="session-controls"><button id="clipboard" class="icon-button" title="Paste text into this desktop" aria-label="Open clipboard" data-icon="clipboard" disabled></button><button id="stop" class="icon-button power" title="End desktop session" aria-label="End desktop session" data-icon="power" disabled></button></div>
+</footer>
+<dialog id="settings-dialog" class="modal settings-modal">
+  <div class="modal-heading"><div><small>YOUR SPACE, YOUR WAY</small><h2>Make it yours.</h2></div><button class="icon-button" data-close="settings-dialog" aria-label="Close settings" data-icon="close"></button></div>
+  <div class="tabs"><button data-tab="general" class="active">Desktop</button><button data-tab="components">Components</button><button data-tab="logs">Session log</button></div>
+  <section data-pane="general">
+    <div class="setting-row"><div><b>Desktop resolution</b><p>Initial size when starting a new session.</p></div><select id="resolution"><option>1280x720</option><option selected>1600x900</option><option>1920x1080</option><option>2560x1440</option></select></div>
+    <div class="setting-row"><div><b>Fit desktop to window</b><p>Resize your desktop as the Nest window changes.</p></div><input id="auto-resize" class="switch" type="checkbox" checked aria-label="Fit desktop to window"></div>
+    <div class="setting-row"><div><b>Accent</b><p>A small change of atmosphere.</p></div><div class="swatches"><button data-accent="rose" class="swatch rose selected" aria-label="Rose accent"></button><button data-accent="lavender" class="swatch lavender" aria-label="Lavender accent"></button><button data-accent="mint" class="swatch mint" aria-label="Mint accent"></button></div></div>
+    <div class="about-card"><span data-icon="layers"></span><div><b>A separate desktop. The same computer.</b><p>Nest shares your files, network, and hardware. Terminal commands affect your real system. Firefox uses its own saved profile.</p></div></div>
+    <div class="about-footer"><span id="platform">Nest 0.1.0 · Linux</span><span>F11 for fullscreen</span></div>
+  </section>
+  <section data-pane="components" hidden><div class="component-heading"><p>Install once, then make yourself at home.</p><button id="refresh" class="subtle">Check again ↻</button></div><div id="dependencies" class="dependencies"></div>
+    <div class="install-heading"><label for="distro">Install command</label><select id="distro"><option value="arch">CachyOS / Arch</option><option value="debian">Debian / Ubuntu</option><option value="fedora">Fedora</option><option value="void">Void</option></select></div>
+    <pre id="install-command"></pre><button id="copy-command" class="subtle">Copy command</button><p class="footnote">Run in your normal terminal. Nest never installs packages automatically. Native packages are supported; Flatpak and Snap apps are not supported in this preview.</p>
+  </section>
+  <section data-pane="logs" hidden><p class="footnote">Startup messages and app errors from this session.</p><pre id="logs">No session started yet.</pre></section>
+</dialog>
+<dialog id="stop-dialog" class="modal compact"><div class="modal-heading"><h2>See you in a bit?</h2><button class="icon-button" data-close="stop-dialog" aria-label="Cancel" data-icon="close"></button></div><p>Ending this desktop closes the apps running inside it. Save your work first.</p><div class="dialog-actions"><button class="subtle" data-close="stop-dialog">Keep working</button><button id="confirm-stop" class="primary">End session</button></div></dialog>
+<dialog id="clipboard-dialog" class="modal compact"><div class="modal-heading"><h2>A little handoff.</h2><button class="icon-button" data-close="clipboard-dialog" aria-label="Close clipboard" data-icon="close"></button></div><p>Paste text here to put it on your nested desktop’s clipboard.</p><textarea id="clipboard-text" maxlength="65536" placeholder="Text to send…"></textarea><div class="dialog-actions"><button id="send-clipboard" class="primary">Send to desktop</button></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script type="module" src="app.js"></script></body></html>
