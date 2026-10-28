@@ -50,7 +50,7 @@ function launchSpec(id, deps, dataDir) {
   const terminal = ['-fa', 'Monospace', '-fs', '11', '-bg', '#14151d', '-fg', '#f0eaf0', '-cr', '#f393b5', '-geometry', '100x28', '-sb', '-rightbar'];
   switch (id) {
     case 'terminal': return [get('terminal'), [...terminal, '-T', 'Nest Terminal']];
-    case 'btop': return [get('terminal'), [...terminal, '-T', 'btop · Nest', '-e', get('btop')]];
+    case 'btop': return [get('terminal'), [...terminal, '-T', 'btop - Nest', '-e', get('btop')]];
     case 'firefox': return [get('firefox'), ['--no-remote', '--new-instance', '--profile', path.join(dataDir, 'firefox'), '--new-window', 'about:blank']];
     case 'files': { const bin = get('files'); return [bin, [path.basename(bin) === 'thunar' ? '--disable-server' : '--new-win', os.homedir()]]; }
     default: throw new Error('Unknown application.');
