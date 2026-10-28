@@ -107,7 +107,14 @@ class DesktopSession extends EventEmitter {
   }
   async windows() {
     if (this.state !== 'running') return [];
-    const { stdout } = await exec(this.deps.find(d => d.id === 'windows').path, ['-l'], { env: this.env, timeout: 2000 });
+    let stdout;
+    try {
+      ({ stdout } = await exec(this.deps.find(d => d.id === 'windows').path, ['-l'], { env: this.env, timeout: 2000 }));
+    } catch (error) {
+      // Openbox may omit the client-list property until the first window maps.
+      if (error.code === 1 && /Cannot get client list properties/.test(error.stderr || '')) return [];
+      throw error;
+    }
     return stdout.trim().split('\n').flatMap(line => {
       const match = /^(0x[\da-f]+)\s+(-?\d+)\s+\S+\s+(.*)$/i.exec(line);
       return match && Number(match[2]) >= 0 ? [{ id: match[1], title: match[3] }] : [];
