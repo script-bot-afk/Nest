@@ -44,5 +44,14 @@ test('real X display, authenticated X clients, btop window, shutdown and restart
     for (const pid of childPids) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
     assert.equal((await session.start('1280x720')).state, 'running');
     await session.stop();
-  } catch (e) { console.error(session.logs.join('\n')); throw e; }
+  } catch (e) {
+    console.error(session.logs.join('\n'));
+    console.error('Parsed windows:', await session.windows().catch(error => error.message));
+    if (session.env) {
+      for (const [bin, args] of [['wmctrl', ['-lp']], ['xwininfo', ['-root', '-tree']]]) {
+        console.error(bin, await exec(bin, args, { env: session.env, timeout: 2000 }).then(r => r.stdout, error => error.message));
+      }
+    }
+    throw e;
+  }
 });
