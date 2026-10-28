@@ -28,13 +28,13 @@ test('real X display, authenticated X clients, btop window, shutdown and restart
     await assert.rejects(exec('xdpyinfo', [], { env: { ...session.env, XAUTHORITY: '/dev/null' }, timeout: 2000 }));
     const raw = net.connect(path.join(tmp, 'display.sock'));
     const [banner] = await once(raw, 'data'); assert.match(banner.toString(), /^RFB 003/); raw.destroy();
-    await session.launch('terminal');
-    await session.launch('btop');
+    const terminal = await session.launch('terminal');
+    const btop = await session.launch('btop');
     await waitFor(async () => {
       const rows = await session.windows();
-      return rows.some(w => /btop/.test(w.title)) && rows.some(w => /Nest Terminal/.test(w.title));
+      return rows.some(w => w.pid === btop.pid && /btop/.test(w.title)) && rows.some(w => w.pid === terminal.pid);
     }, 6000, 'btop and terminal windows not found');
-    const windows = await session.windows(); assert.ok(windows.some(w => /Nest Terminal/.test(w.title)));
+    const windows = await session.windows(); assert.ok(windows.some(w => w.pid === terminal.pid));
     await session.focus(windows[0].id);
     await assert.rejects(session.launch('arbitrary-command'), /Unknown/);
     const childPids = [...session.children].map(c => c.pid);
