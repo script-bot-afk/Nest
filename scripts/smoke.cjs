@@ -1,10 +1,14 @@
 const { _electron: electron } = require('playwright');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const os = require('node:os');
 const assert = require('node:assert/strict');
+const { waitFor } = require('../src/session.cjs');
 
 (async () => {
   await fs.mkdir('test-output', { recursive: true });
+  const testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nest-ui-'));
+  const marker = path.join(testDir, 'terminal-marker');
   // These switches belong only to the CI harness; never to the shipped application.
   const instance = await electron.launch({ args: ['--no-sandbox', '--disable-gpu', '.'], timeout: 30000 });
   let page;
@@ -28,15 +32,26 @@ const assert = require('node:assert/strict');
     await page.locator('#windows').getByRole('button', { name: /Nest Terminal/ }).waitFor({ timeout: 10000 });
     // Typing passes through noVNC into the real nested terminal.
     await page.locator('#windows').getByRole('button', { name: /Nest Terminal/ }).click();
-    await page.keyboard.type('printf "NEST_NATIVE_TERMINAL_OK\\n"');
+    await page.locator('#screen canvas').waitFor({ state: 'visible' });
+    await page.waitForFunction(() => document.activeElement === document.querySelector('#screen canvas'));
+    // Read back a file written by the real shell, not by the test harness.
+    await page.keyboard.type("printf 'NEST_NATIVE_TERMINAL_OK\\n' | tee '" + marker + "'");
     await page.keyboard.press('Enter');
+    await waitFor(async () => {
+      try { return (await fs.readFile(marker, 'utf8')).trim() === 'NEST_NATIVE_TERMINAL_OK'; }
+      catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+    }, 10000, 'Typed command did not reach the native terminal');
     await page.getByRole('button', { name: 'Open Firefox', exact: true }).click();
     await page.locator('#windows').getByRole('button', { name: /Firefox/ }).first().waitFor({ timeout: 30000 });
     await page.locator('#windows').getByRole('button', { name: /btop/ }).click();
     await page.waitForTimeout(1800);
     await page.screenshot({ path: 'test-output/native-desktop.png' });
+    const initialSize = await page.locator('#screen canvas').evaluate(c => ({ width: c.width, height: c.height }));
     await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1100, 760));
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(before => {
+      const canvas = document.querySelector('#screen canvas');
+      return canvas.width > 0 && canvas.height > 0 && (canvas.width !== before.width || canvas.height !== before.height);
+    }, initialSize, { timeout: 10000 });
     await page.screenshot({ path: 'test-output/resized-desktop.png' });
     const nativeWindows = await page.evaluate(() => window.nest.windows());
     assert.ok(nativeWindows.length >= 3, 'Real Firefox, btop and terminal windows exist');
@@ -45,7 +60,7 @@ const assert = require('node:assert/strict');
     await page.getByText('Your space is ready', { exact: true }).waitFor({ timeout: 10000 });
     assert.equal((await page.evaluate(() => window.nest.info())).state, 'stopped');
     assert.deepEqual(errors, [], 'No renderer errors');
-    await fs.writeFile('test-output/result.json', JSON.stringify({ passed: true, nativeWindows, rendererErrors: errors }, null, 2));
+    await fs.writeFile('test-output/result.json', JSON.stringify({ passed: true, nativeTerminalInput: true, desktopResized: true, nativeWindows, rendererErrors: errors }, null, 2));
     console.log('PASS: Electron renderer, noVNC, btop, terminal input, Firefox, resize and shutdown.');
   } catch (error) {
     if (page) {
@@ -58,5 +73,6 @@ const assert = require('node:assert/strict');
   } finally {
     if (page) await page.evaluate(() => window.nest?.stop()).catch(() => {});
     await instance.close();
+    await fs.rm(testDir, { recursive: true, force: true });
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
