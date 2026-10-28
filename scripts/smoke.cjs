@@ -28,10 +28,16 @@ const { waitFor } = require('../src/session.cjs');
     await page.locator('#connecting').waitFor({ state: 'hidden', timeout: 15000 });
     await page.getByRole('button', { name: 'Open btop', exact: true }).click();
     await page.locator('#windows').getByRole('button', { name: /btop/ }).waitFor({ timeout: 10000 });
+    const beforeTerminal = await page.evaluate(() => window.nest.windows());
     await page.getByRole('button', { name: 'Open Terminal', exact: true }).click();
-    await page.locator('#windows').getByRole('button', { name: /Nest Terminal/ }).waitFor({ timeout: 10000 });
+    let terminal;
+    await waitFor(async () => {
+      const rows = await page.evaluate(() => window.nest.windows());
+      terminal = rows.find(row => !beforeTerminal.some(before => before.id === row.id));
+      return !!terminal;
+    }, 10000, 'Native terminal window not found');
     // Typing passes through noVNC into the real nested terminal.
-    await page.locator('#windows').getByRole('button', { name: /Nest Terminal/ }).click();
+    await page.locator('#windows [data-window-id="' + terminal.id + '"]').click();
     await page.locator('#screen canvas').waitFor({ state: 'visible' });
     await page.waitForFunction(() => document.activeElement === document.querySelector('#screen canvas'));
     // Read back a file written by the real shell, not by the test harness.
