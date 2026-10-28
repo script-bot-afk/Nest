@@ -1,0 +1,90 @@
+name: Build Nest
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a preview release
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install native test components
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tigervnc-standalone-server openbox xterm btop dbus-x11 wmctrl x11-utils x11-xserver-utils feh xvfb libgtk-3-0 libasound2t64
+      - name: Install native Firefox for integration testing
+        run: |
+          curl --fail --location --retry 3 'https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US' -o "$RUNNER_TEMP/firefox.tar.xz"
+          tar -xf "$RUNNER_TEMP/firefox.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/firefox" >> "$GITHUB_PATH"
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run build
+      - name: Exercise real app windows in Electron
+        run: xvfb-run -a npm run test:ui
+        env:
+          CI: 'true'
+      - name: Upload test screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nest-test-evidence
+          path: test-output/
+          if-no-files-found: ignore
+      - name: Package Linux app
+        run: npm run dist
+      - name: Create checksums
+        run: cd release && sha256sum *.AppImage *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nest-linux-x64
+          path: |
+            release/*.AppImage
+            release/*.tar.gz
+            release/SHA256SUMS
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nest-linux-x64
+          path: release
+      - name: Publish versioned preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v$VERSION"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "$TAG" ]]; then
+            echo "Tag must match package.json version"; exit 1
+          fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release already exists. Bump package.json to publish a new version."; exit 1
+          fi
+          gh release create "$TAG" release/*.AppImage release/*.tar.gz release/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "Nest $VERSION · Linux preview" --prerelease \
+            --notes-file .github/RELEASE_NOTES.md
