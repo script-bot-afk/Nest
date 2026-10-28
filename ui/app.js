@@ -149,6 +149,7 @@ function renderWindows(windows) {
   }
   for (const w of windows) {
     const el = document.createElement('button'); el.className = 'window-button'; el.textContent = w.title; el.title = w.title;
+    el.dataset.windowId = w.id;
     el.addEventListener('click', async () => { try { await api.focus(w.id); rfb?.focus(); } catch (error) { toast(error.message); } });
     $('#windows').append(el);
   }
