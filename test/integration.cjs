@@ -19,6 +19,7 @@ test('real X display, authenticated X clients, btop window, shutdown and restart
   try {
     const start = await session.start('1280x720');
     assert.equal(start.state, 'running'); assert.match(start.url, /^ws:\/\/127\.0\.0\.1:/);
+    assert.deepEqual(await session.windows(), [], 'An empty desktop has no application windows');
     const tmp = session.temp;
     assert.equal((await fs.stat(tmp)).mode & 0o777, 0o700);
     assert.equal((await fs.stat(path.join(tmp, 'display.sock'))).mode & 0o777, 0o600);
@@ -29,7 +30,10 @@ test('real X display, authenticated X clients, btop window, shutdown and restart
     const [banner] = await once(raw, 'data'); assert.match(banner.toString(), /^RFB 003/); raw.destroy();
     await session.launch('terminal');
     await session.launch('btop');
-    await waitFor(async () => (await session.windows()).some(w => /btop/.test(w.title)), 6000, 'btop window not found');
+    await waitFor(async () => {
+      const rows = await session.windows();
+      return rows.some(w => /btop/.test(w.title)) && rows.some(w => /Nest Terminal/.test(w.title));
+    }, 6000, 'btop and terminal windows not found');
     const windows = await session.windows(); assert.ok(windows.some(w => /Nest Terminal/.test(w.title)));
     await session.focus(windows[0].id);
     await assert.rejects(session.launch('arbitrary-command'), /Unknown/);
