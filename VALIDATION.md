@@ -1,6 +1,6 @@
 # Nest 0.1.0 validation
 
-The native source build passed [GitHub Actions run 40780853474](https://github.com/script-bot-afk/Nest/actions/runs/40780853474) on Ubuntu 24.04 x86_64 on October 28, 2026 (commit `225d41f`).
+The source app and packaged Linux executable passed [release run 40973468598](https://github.com/script-bot-afk/Nest/actions/runs/40973468598) on Ubuntu 24.04 x86_64 on October 29, 2026 (commit `2bc8166`). The workflow published [v0.1.0](https://github.com/script-bot-afk/Nest/releases/tag/v0.1.0) with an AppImage, portable tarball, and SHA-256 checksums.
 
 Verified in that run:
 
@@ -13,7 +13,7 @@ Verified in that run:
 - No renderer errors occurred. Screenshots and a JSON result are attached to the run as `nest-test-evidence`.
 - AppImage and portable tarball packaging succeeded.
 
-The release workflow also exercises the **packaged Linux executable** after packaging. It checks the external Openbox/wallpaper resources and repeats the native UI checks. Publication is gated on this step succeeding. Release assets include SHA-256 checksums.
+The **packaged Linux executable** passed the same native UI checks after packaging. Its external Openbox/wallpaper resources were checked. The evidence JSON records `packaged: true`, successful terminal input and desktop resizing, three native app windows, and no renderer errors. Publication is gated on this step succeeding.
 
 This is an early Linux desktop preview. CI coverage on Ubuntu does not establish compatibility with every distribution or compositor. The test harness alone uses Chromium's `--no-sandbox` switch; the shipped app does not. Native sessions share the host account and are not an isolation boundary.
 
