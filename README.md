@@ -102,7 +102,7 @@ npm run build
 xvfb-run -a npm run test:ui # real Electron and noVNC smoke test
 ```
 
-Integration tests require an environment that permits Unix sockets and native X processes. They report a skip if dependencies are missing. CI installs the dependencies and runs all of them. UI testing uses Playwright to launch Electron, verifies the real btop/Firefox windows, and saves screenshots as workflow artifacts. CI's `--no-sandbox` option is **test-harness-only**; production does not add it.
+Integration tests require an environment that permits Unix sockets and native X processes. They report a skip if dependencies are missing. CI installs the dependencies and runs all of them. UI testing uses Playwright to exercise both the source app and the packaged Linux executable. It verifies real Firefox/btop windows, terminal command execution, framebuffer resizing, and shutdown, and saves screenshots as workflow artifacts. See [VALIDATION.md](VALIDATION.md) for recorded results. CI's `--no-sandbox` option is **test-harness-only**; production does not add it.
 
 Pushes to `main` run checks and build downloadable workflow artifacts. To publish a version, use **Actions → Build Nest → Run workflow** with **Publish a preview release** checked, or push a version tag. Publishing refuses to overwrite an existing version.
 
