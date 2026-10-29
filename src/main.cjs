@@ -15,10 +15,12 @@ if (!locked) app.quit();
 else {
   app.on('second-instance', () => { if (win) { win.restore(); win.focus(); } });
   app.whenReady().then(() => {
-    desktop = new DesktopSession(app.getPath('userData'), path.join(__dirname, '..', 'assets'));
+    // Native programs cannot read files inside Electron's ASAR archive.
+    const assetsDir = app.isPackaged ? path.join(process.resourcesPath, 'assets') : path.join(__dirname, '..', 'assets');
+    desktop = new DesktopSession(app.getPath('userData'), assetsDir);
     Menu.setApplicationMenu(null);
     win = new BrowserWindow({ width: 1380, height: 880, minWidth: 900, minHeight: 620,
-      title: 'Nest', backgroundColor: '#131019', icon: path.join(__dirname, '..', 'assets', 'icon.png'),
+      title: 'Nest', backgroundColor: '#131019', icon: path.join(assetsDir, 'icon.png'),
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false,
         contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false } });
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
