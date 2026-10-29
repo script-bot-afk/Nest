@@ -10,10 +10,21 @@ const { waitFor } = require('../src/session.cjs');
   const testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nest-ui-'));
   const marker = path.join(testDir, 'terminal-marker');
   // These switches belong only to the CI harness; never to the shipped application.
-  const instance = await electron.launch({ args: ['--no-sandbox', '--disable-gpu', '.'], timeout: 30000 });
+  const executablePath = process.env.NEST_EXECUTABLE && path.resolve(process.env.NEST_EXECUTABLE);
+  const instance = await electron.launch({
+    ...(executablePath ? { executablePath } : {}),
+    args: ['--no-sandbox', '--disable-gpu', ...(executablePath ? [] : ['.'])],
+    timeout: 30000
+  });
   let page;
   const errors = [];
   try {
+    assert.equal(await instance.evaluate(({ app }) => app.isPackaged), !!executablePath);
+    if (executablePath) {
+      const resources = path.join(path.dirname(executablePath), 'resources', 'assets');
+      await fs.access(path.join(resources, 'openbox.xml'));
+      await fs.access(path.join(resources, 'wallpaper.jpg'));
+    }
     page = await instance.firstWindow();
     page.on('pageerror', error => errors.push(error.message));
     await page.getByText('Everything’s ready to go.').waitFor({ timeout: 15000 });
@@ -66,7 +77,7 @@ const { waitFor } = require('../src/session.cjs');
     await page.getByText('Your space is ready', { exact: true }).waitFor({ timeout: 10000 });
     assert.equal((await page.evaluate(() => window.nest.info())).state, 'stopped');
     assert.deepEqual(errors, [], 'No renderer errors');
-    await fs.writeFile('test-output/result.json', JSON.stringify({ passed: true, nativeTerminalInput: true, desktopResized: true, nativeWindows, rendererErrors: errors }, null, 2));
+    await fs.writeFile('test-output/result.json', JSON.stringify({ passed: true, packaged: !!executablePath, nativeTerminalInput: true, desktopResized: true, nativeWindows, rendererErrors: errors }, null, 2));
     console.log('PASS: Electron renderer, noVNC, btop, terminal input, Firefox, resize and shutdown.');
   } catch (error) {
     if (page) {
