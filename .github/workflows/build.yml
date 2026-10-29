@@ -42,6 +42,13 @@ jobs:
         run: xvfb-run -a npm run test:ui
         env:
           CI: 'true'
+      - name: Package Linux app
+        run: npm run dist
+      - name: Exercise the packaged Linux app
+        run: xvfb-run -a npm run test:ui
+        env:
+          CI: 'true'
+          NEST_EXECUTABLE: release/linux-unpacked/nest
       - name: Upload test screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,8 +56,6 @@ jobs:
           name: nest-test-evidence
           path: test-output/
           if-no-files-found: ignore
-      - name: Package Linux app
-        run: npm run dist
       - name: Create checksums
         run: cd release && sha256sum *.AppImage *.tar.gz > SHA256SUMS
       - uses: actions/upload-artifact@v4
